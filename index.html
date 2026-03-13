@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="帰宅ナビ">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" id="manifestLink" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <title>帰宅ナビ</title>
@@ -485,6 +485,38 @@ function toRad(deg) { return deg * Math.PI / 180; }
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+
+// マニフェストを動的に生成（start_urlにハッシュを含める）
+function updateManifest() {
+  const hash = location.hash || '';
+  const saved = localStorage.getItem('kitaku_config');
+  let startHash = hash;
+  if (!startHash && saved) {
+    try {
+      const c = JSON.parse(saved);
+      startHash = `#address=${encodeURIComponent(c.address)}&lat=${c.lat}&lng=${c.lng}`;
+    } catch(e) {}
+  }
+  if (startHash) {
+    const manifest = {
+      name: "帰宅ナビ",
+      short_name: "帰宅ナビ",
+      description: "自宅への最短帰宅経路をすぐ検索",
+      start_url: `./index.html${startHash}`,
+      display: "standalone",
+      background_color: "#f0f4f8",
+      theme_color: "#1a73e8",
+      orientation: "portrait",
+      icons: [
+        { src: "icon.svg", sizes: "any", type: "image/svg+xml" }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    document.getElementById('manifestLink').href = URL.createObjectURL(blob);
+  }
+}
+
+updateManifest();
 
 // 起動時に設定読み込み
 loadConfig();
