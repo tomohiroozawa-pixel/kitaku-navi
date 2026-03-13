@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="帰宅ナビ">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<title>帰宅ナビ</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --primary: #1a73e8;
+  --primary-dark: #1557b0;
+  --bg: #f0f4f8;
+  --card: #ffffff;
+  --text: #1a1a2e;
+  --text-sub: #5a6277;
+  --shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --radius: 16px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+.header {
+  background: linear-gradient(135deg, var(--primary), #4285f4);
+  color: white;
+  padding: 20px 20px 24px;
+  text-align: center;
+  position: relative;
+}
+
+.header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.header p {
+  font-size: 13px;
+  opacity: 0.85;
+  margin-top: 4px;
+}
+
+.main {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.status-card {
+  text-align: center;
+}
+
+.status-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.status-label {
+  font-size: 14px;
+  color: var(--text-sub);
+  margin-bottom: 4px;
+}
+
+.status-value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.status-value.error {
+  color: #d93025;
+}
+
+.status-value.success {
+  color: #188038;
+}
+
+.home-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.home-detail h3 {
+  font-size: 14px;
+  color: var(--text-sub);
+  font-weight: 500;
+}
+
+.home-detail p {
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.distance-display {
+  text-align: center;
+  padding: 16px 20px;
+}
+
+.distance-display .label {
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.distance-display .value {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--primary);
+  margin: 4px 0;
+}
+
+.distance-display .unit {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 12px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  color: white;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.nav-btn:active {
+  transform: scale(0.96);
+}
+
+.nav-btn.car {
+  background: linear-gradient(135deg, #1a73e8, #4285f4);
+  box-shadow: 0 4px 16px rgba(26,115,232,0.35);
+}
+
+.nav-btn.train {
+  background: linear-gradient(135deg, #188038, #34a853);
+  box-shadow: 0 4px 16px rgba(24,128,56,0.35);
+}
+
+.nav-btn .icon {
+  font-size: 36px;
+}
+
+.nav-btn .label {
+  font-size: 14px;
+}
+
+.nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(26,115,232,0.2);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 14px;
+  border: 2px solid #dde3ed;
+  border-radius: var(--radius);
+  background: white;
+  color: var(--text-sub);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.refresh-btn:active {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.footer {
+  text-align: center;
+  padding: 16px;
+  font-size: 11px;
+  color: #aab;
+}
+
+.status-hint {
+  margin-top: 12px;
+  padding: 10px 16px;
+  background: #e8f0fe;
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--primary);
+  line-height: 1.5;
+}
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>帰宅ナビ</h1>
+  <p>自宅への最短ルートをすぐ検索</p>
+</div>
+
+<div class="main">
+  <!-- 自宅情報 -->
+  <div class="card home-info">
+    <div class="home-icon">🏠</div>
+    <div class="home-detail">
+      <h3>自宅</h3>
+      <p>さいたま市北区日進町2-1397-5</p>
+    </div>
+  </div>
+
+  <!-- 現在地ステータス -->
+  <div class="card status-card" id="statusCard">
+    <div class="loading-spinner" id="spinner"></div>
+    <div class="status-icon hidden" id="statusIcon"></div>
+    <div class="status-label" id="statusLabel">現在地を取得中...</div>
+    <div class="status-value" id="statusValue"></div>
+    <div class="status-hint hidden" id="statusHint">
+      GPSが使えなくても、下のボタンからGoogle Mapsで経路検索できます
+    </div>
+  </div>
+
+  <!-- 直線距離 -->
+  <div class="card distance-display hidden" id="distanceCard">
+    <div class="label">自宅までの直線距離</div>
+    <div class="value" id="distanceValue">--</div>
+  </div>
+
+  <!-- ナビボタン -->
+  <div class="nav-buttons">
+    <button class="nav-btn car" id="btnCar" disabled onclick="openNav('driving')">
+      <span class="icon">🚗</span>
+      <span class="label">車で帰る</span>
+    </button>
+    <button class="nav-btn train" id="btnTrain" disabled onclick="openNav('transit')">
+      <span class="icon">🚃</span>
+      <span class="label">電車で帰る</span>
+    </button>
+  </div>
+
+  <!-- 更新ボタン -->
+  <button class="refresh-btn" onclick="getLocation()">
+    🔄 現在地を再取得
+  </button>
+</div>
+
+<div class="footer">
+  帰宅ナビ v1.0 — Google Maps連携
+</div>
+
+<script>
+// 自宅の住所（Google Maps用）
+const HOME_ADDRESS = '埼玉県さいたま市北区日進町2-1397-5';
+// 自宅の緯度経度（直線距離計算用 - 日進駅付近の概算値）
+const HOME_LAT = 35.9196;
+const HOME_LNG = 139.5983;
+
+let currentLat = null;
+let currentLng = null;
+
+function getLocation() {
+  const spinner = document.getElementById('spinner');
+  const statusIcon = document.getElementById('statusIcon');
+  const statusLabel = document.getElementById('statusLabel');
+  const statusValue = document.getElementById('statusValue');
+  const distanceCard = document.getElementById('distanceCard');
+
+  spinner.classList.remove('hidden');
+  statusIcon.classList.add('hidden');
+  statusLabel.textContent = '現在地を取得中...';
+  statusValue.textContent = '';
+  statusValue.className = 'status-value';
+
+  if (!navigator.geolocation) {
+    showError('この端末では位置情報を利用できません');
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      currentLat = pos.coords.latitude;
+      currentLng = pos.coords.longitude;
+
+      spinner.classList.add('hidden');
+      statusIcon.textContent = '📍';
+      statusIcon.classList.remove('hidden');
+      statusLabel.textContent = '現在地を取得しました';
+      statusValue.textContent = `${currentLat.toFixed(5)}, ${currentLng.toFixed(5)}`;
+      statusValue.className = 'status-value success';
+
+      // 直線距離を計算
+      const dist = calcDistance(currentLat, currentLng, HOME_LAT, HOME_LNG);
+      distanceCard.classList.remove('hidden');
+      const distanceValue = document.getElementById('distanceValue');
+      if (dist < 1) {
+        distanceValue.innerHTML = `${(dist * 1000).toFixed(0)}<span class="unit"> m</span>`;
+      } else {
+        distanceValue.innerHTML = `${dist.toFixed(1)}<span class="unit"> km</span>`;
+      }
+
+      // ボタン有効化
+      document.getElementById('btnCar').disabled = false;
+      document.getElementById('btnTrain').disabled = false;
+    },
+    (err) => {
+      let msg = '位置情報の取得に失敗しました';
+      if (err.code === 1) msg = '位置情報の使用が許可されていません';
+      if (err.code === 2) msg = '位置情報を取得できませんでした';
+      if (err.code === 3) msg = 'タイムアウトしました';
+      showError(msg);
+      // GPS失敗でもボタンを有効化（Google Maps側で現在地を取得）
+      document.getElementById('btnCar').disabled = false;
+      document.getElementById('btnTrain').disabled = false;
+      document.getElementById('statusHint').classList.remove('hidden');
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 60000
+    }
+  );
+}
+
+function showError(msg) {
+  document.getElementById('spinner').classList.add('hidden');
+  const statusIcon = document.getElementById('statusIcon');
+  statusIcon.textContent = '⚠️';
+  statusIcon.classList.remove('hidden');
+  document.getElementById('statusLabel').textContent = 'エラー';
+  const statusValue = document.getElementById('statusValue');
+  statusValue.textContent = msg;
+  statusValue.className = 'status-value error';
+}
+
+function openNav(mode) {
+  const dest = encodeURIComponent(HOME_ADDRESS);
+
+  let url;
+  if (currentLat !== null && currentLng !== null) {
+    // GPS取得済み → 現在地を指定
+    const origin = `${currentLat},${currentLng}`;
+    url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=${mode}`;
+  } else {
+    // GPS未取得 → Google Mapsに現在地取得を任せる
+    url = `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=${mode}`;
+  }
+  window.open(url, '_blank');
+}
+
+// Haversine公式で直線距離(km)を計算
+function calcDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLng/2) * Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function toRad(deg) { return deg * Math.PI / 180; }
+
+// Service Worker登録
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// 起動時に位置情報取得
+getLocation();
+</script>
+</body>
+</html>
