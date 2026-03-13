@@ -264,8 +264,19 @@ body {
     <div class="home-icon">🏠</div>
     <div class="home-detail">
       <h3>自宅</h3>
-      <p>さいたま市北区日進町2-1397-5</p>
+      <p id="homeDisplay">読み込み中...</p>
     </div>
+  </div>
+
+  <!-- 初期設定画面（ハッシュなしでアクセスした場合） -->
+  <div class="card hidden" id="setupCard">
+    <div class="status-label" style="margin-bottom:8px;">自宅住所を設定してください</div>
+    <input type="text" id="addressInput" placeholder="例: 東京都渋谷区..." style="width:100%;padding:12px;border:2px solid #dde3ed;border-radius:10px;font-size:15px;">
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <input type="number" id="latInput" placeholder="緯度" step="0.0001" style="flex:1;padding:10px;border:2px solid #dde3ed;border-radius:10px;font-size:14px;">
+      <input type="number" id="lngInput" placeholder="経度" step="0.0001" style="flex:1;padding:10px;border:2px solid #dde3ed;border-radius:10px;font-size:14px;">
+    </div>
+    <button onclick="saveConfig()" style="width:100%;margin-top:10px;padding:14px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;">設定を保存</button>
   </div>
 
   <!-- 現在地ステータス -->
@@ -308,14 +319,65 @@ body {
 </div>
 
 <script>
-// 自宅の住所（Google Maps用）
-const HOME_ADDRESS = '埼玉県さいたま市北区日進町2-1397-5';
-// 自宅の緯度経度（直線距離計算用 - 日進駅付近の概算値）
-const HOME_LAT = 35.9196;
-const HOME_LNG = 139.5983;
+// 設定はURLハッシュまたはlocalStorageから読み込み（ソースコードに住所を含めない）
+let HOME_ADDRESS = '';
+let HOME_LAT = 0;
+let HOME_LNG = 0;
 
 let currentLat = null;
 let currentLng = null;
+
+// URLハッシュから設定を読み込み: #address=...&lat=...&lng=...
+function loadConfig() {
+  // まずlocalStorageから読み込み
+  const saved = localStorage.getItem('kitaku_config');
+  if (saved) {
+    try {
+      const c = JSON.parse(saved);
+      HOME_ADDRESS = c.address;
+      HOME_LAT = c.lat;
+      HOME_LNG = c.lng;
+    } catch(e) {}
+  }
+
+  // URLハッシュがあればそちらを優先し、localStorageにも保存
+  const hash = location.hash.slice(1);
+  if (hash) {
+    const params = new URLSearchParams(hash);
+    if (params.get('address')) {
+      HOME_ADDRESS = params.get('address');
+      HOME_LAT = parseFloat(params.get('lat')) || 0;
+      HOME_LNG = parseFloat(params.get('lng')) || 0;
+      localStorage.setItem('kitaku_config', JSON.stringify({
+        address: HOME_ADDRESS, lat: HOME_LAT, lng: HOME_LNG
+      }));
+    }
+  }
+
+  if (HOME_ADDRESS) {
+    // 住所の最後の部分だけ表示（プライバシー配慮）
+    const parts = HOME_ADDRESS.split(/[都道府県]/);
+    const short = parts.length > 1 ? HOME_ADDRESS.slice(HOME_ADDRESS.indexOf(parts[1])) : HOME_ADDRESS;
+    document.getElementById('homeDisplay').textContent = short;
+    document.getElementById('setupCard').classList.add('hidden');
+    getLocation();
+  } else {
+    document.getElementById('homeDisplay').textContent = '未設定';
+    document.getElementById('setupCard').classList.remove('hidden');
+    document.getElementById('spinner').classList.add('hidden');
+    document.getElementById('statusLabel').textContent = '先に自宅住所を設定してください';
+  }
+}
+
+function saveConfig() {
+  const addr = document.getElementById('addressInput').value.trim();
+  const lat = parseFloat(document.getElementById('latInput').value) || 0;
+  const lng = parseFloat(document.getElementById('lngInput').value) || 0;
+  if (!addr) { alert('住所を入力してください'); return; }
+  localStorage.setItem('kitaku_config', JSON.stringify({ address: addr, lat: lat, lng: lng }));
+  location.hash = `address=${encodeURIComponent(addr)}&lat=${lat}&lng=${lng}`;
+  location.reload();
+}
 
 function getLocation() {
   const spinner = document.getElementById('spinner');
@@ -424,8 +486,8 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
-// 起動時に位置情報取得
-getLocation();
+// 起動時に設定読み込み
+loadConfig();
 </script>
 </body>
 </html>
